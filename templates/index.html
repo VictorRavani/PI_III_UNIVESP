@@ -10,7 +10,10 @@
   <body>
     
     <div class="container">
-      <h1 class="text-center">Gestão de Clientes</h1>
+      <h1 class="text-center">Estoque</h1>
+
+      <h2>Mensagem MQTT:</h2>
+      <p>{{ mensagem }}</p>
 
       <!-- Formulário add Clientes -->
       <div id="form-cliente" c-container="{{ url_for('cliente.form_cliente') }}"></div>
@@ -18,7 +21,7 @@
       <hr>
 
       <!-- Lista de Clientes -->
-      <h2>Lista de clientes</h2>
+      <h2>Lista de produtos</h2>
       <div c-container="{{ url_for('cliente.lista_clientes')}}"></div>
     </div> 
 
