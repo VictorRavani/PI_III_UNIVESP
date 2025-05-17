@@ -1,6 +1,8 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, jsonify
 import requests
 from database.models.cliente import Cliente
+from mqtt_cliente import mqtt_data
+import json
 
 cliente_route = Blueprint('cliente', __name__)
 
@@ -15,6 +17,45 @@ Rota de Cliente
     -/clientes/<id>/update (PUT) - atualiza os dados do cliente
     -/clientes/<id>/delete (DELETE) - deleta o registro do usuário 
 """
+
+ultimo_id_msg = None  # <-- armazena o último id de mensagem processado
+
+@cliente_route.route('/mqtt_status')
+def mqtt_status():
+    global ultimo_id_msg
+
+    mensagem = mqtt_data.get("mensagem", "{}")
+    try:
+        dados = json.loads(mensagem)
+        temperatura = dados.get("temperatura")
+        umidade = dados.get("umidade")
+        codigo = dados.get("codigo")
+        id_msg = dados.get("id_msg")
+
+        if id_msg is not None and id_msg != ultimo_id_msg:
+            cliente = Cliente.get_or_none(Cliente.email == codigo)
+            if cliente and cliente.quantidade > 0:
+                cliente.quantidade -= 1
+                cliente.save()
+                ultimo_id_msg = id_msg  # <-- atualiza somente após sucesso
+                decrementado = True
+            else:
+                decrementado = False
+        else:
+            decrementado = False
+
+    except json.JSONDecodeError:
+        temperatura = None
+        umidade = None
+        codigo = None
+        decrementado = False
+
+    return jsonify({
+        "temperatura": temperatura,
+        "umidade": umidade,
+        "codigo": codigo,
+        "decrementado": decrementado
+    })
 
 @cliente_route.route('/')
 def lista_clientes():
@@ -32,6 +73,7 @@ def inserir_cliente():
     novo_usuario = Cliente.create(
         nome = data['nome'],
         email = data['email'],
+        quantidade = data['quantidade'],
     )
 
     return render_template('item_cliente.html', cliente=novo_usuario)
@@ -41,8 +83,6 @@ def form_cliente():
     """ Formulário para cadastrar um cliente """
     return render_template('form_cliente.html')
 
-
-
 @cliente_route.route('/<int:cliente_id>')
 def detalhe_cliente(cliente_id):
     """ Exibir detalher do cliente """
@@ -50,14 +90,11 @@ def detalhe_cliente(cliente_id):
     cliente = Cliente.get_by_id(cliente_id)
     return render_template('detalhe_cliente.html', cliente=cliente)
 
-
-
 @cliente_route.route('/<int:cliente_id>/edit')
 def form_edit_cliente(cliente_id):
     """ Formulario para editar um cliente """
     cliente = Cliente.get_by_id(cliente_id)
     return render_template('form_cliente.html', cliente=cliente)
-
 
 @cliente_route.route('/<int:cliente_id>/update', methods=['PUT'])
 def atualizar_cliente(cliente_id):
@@ -69,12 +106,11 @@ def atualizar_cliente(cliente_id):
     cliente_editado = Cliente.get_by_id(cliente_id)
     cliente_editado.nome = data['nome']
     cliente_editado.email = data['email']
+    cliente_editado.quantidade = data['quantidade']
     cliente_editado.save() 
 
     # editar usuario        
     return render_template('item_cliente.html', cliente=cliente_editado)
-
-
 
 @cliente_route.route('/<int:cliente_id>/delete', methods=['DELETE'])
 def deletar_cliente(cliente_id):
@@ -82,7 +118,6 @@ def deletar_cliente(cliente_id):
     cliente = Cliente.get_by_id(cliente_id)
     cliente.delete_instance()
     return {'deletec': 'ok'}
-
 
 @cliente_route.route('/pesquisa-cep')
 def listar_ceps():

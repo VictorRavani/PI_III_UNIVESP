@@ -14,7 +14,7 @@ load_dotenv()
 #)
 
 db = PostgresqlDatabase(
-    'db_univesp_pi3',
+    'postgres',
     user='postgres',
     password='postgres',
     host='localhost',
