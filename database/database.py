@@ -17,7 +17,7 @@ db = PostgresqlDatabase(
     'postgres',
     user='postgres',
     password='postgres',
-    host='localhost',
+    host='postgres_db',
     port=5432
 )
 

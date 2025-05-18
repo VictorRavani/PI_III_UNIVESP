@@ -1,21 +1,7 @@
 version: '3.8'
 
 services:
-  web:
-    build: .
-    container_name: flask_app
-    ports:
-      - "5000:5000"
-    depends_on:
-      - db
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=postgres
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-
-  db:
+  postgres_db:
     image: postgres:15
     container_name: postgres_db
     restart: always
@@ -27,6 +13,21 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  flask_app:
+    build: .
+    container_name: flask_app
+    depends_on:
+      - postgres_db
+    entrypoint: ["./wait-for-postgres.sh", "postgres_db", "python", "main.py"]
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=postgres_db
+      - DB_PORT=5432
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
 
 volumes:
   postgres_data:

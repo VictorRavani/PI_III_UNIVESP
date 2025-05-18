@@ -6,12 +6,10 @@ import os
 
 load_dotenv()  # carrega variáveis do .env para o ambiente
 
-#inicializacao
 app = Flask(__name__)
-
 configure_all(app)
 
-start_mqtt() 
+start_mqtt()
 
-#execucao
-app.run(debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", debug=True)
